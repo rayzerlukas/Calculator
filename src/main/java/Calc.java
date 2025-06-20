@@ -1,8 +1,8 @@
-import java.util.List;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Stack;
 public class Calc { 
-    public Double evaluate(String input) {
+    public String evaluate(String input) {
         String temp = removeSpaces(input);
         if (checkInput(temp)) {
             return calculate(toPostfix(addMissingMultiplication(removeAddition(tokenize(temp)))));
@@ -15,7 +15,7 @@ public class Calc {
         String temp;
         temp = input.replace(" ", "");
         //
-        System.out.println("without spaces: " + temp);
+//        System.out.println("without spaces: " + temp);
         //
         return temp;
     }
@@ -27,7 +27,7 @@ public class Calc {
     // whitelist for allowed characters
     private boolean checkInput(String input) { 
         for (int i=0; i<input.length(); i++) {
-            if (!isOperator(input.charAt(i)) && !Character.isDigit(input.charAt(i)) && !(input.charAt(i)=='(') && !(input.charAt(i)==')') && !(input.charAt(i)=='.') && input != null) {
+            if (!isOperator(input.charAt(i)) && !Character.isDigit(input.charAt(i)) && !(input.charAt(i)=='(') && !(input.charAt(i)==')') && !(input.charAt(i)=='.')) {
                 return false;
             } 
         }
@@ -57,31 +57,44 @@ public class Calc {
             output.add(temp);
         }
         // testing
-        System.out.println("tokenized:");
-        for (String l: output) {
-            System.out.println(l);
-        }
+//        System.out.println("tokenized:");
+//        for (String l: output) {
+//            System.out.println(l);
+//        }
         // testing
     return output;
     }  
 
         // adds missing *: (3+3)(3+3) to (3+3)*(3+3)
+        // cases:
+        // 1(
+        // )(
+        // )1
     private List<String> addMissingMultiplication(List<String> output) {
         String prevString = "";
-        for (int x = 0; x < output.size(); x++ ) {
-             if (prevString.equals(")") && !isOperator(output.get(x).charAt(0)) && output.get(x).charAt(0)!=')') {
-                output.add(x, "*");
-                x++;
-             } else if (!prevString.isEmpty() && Character.isDigit(prevString.charAt(0)) && output.get(x).equals("(")) {
-                output.add(x, "*");
-                x++;
-             } else if (prevString.equals(")") && output.get(x).equals("(")) {
-                output.add(x, "*");
-                x++;     
-             }
-             prevString=output.get(x);
+
+        for (int i =0; i < output.size(); i++) {
+
+            if (i>0) {
+                prevString=output.get(i-1);
+                boolean NumberOrClose = isNumber(prevString) || prevString.equals(")");
+                boolean NumberOrOpen = output.get(i).equals("(") || isNumber((output.get(i)));
+                if (NumberOrClose && NumberOrOpen) {
+                    output.add(i, "*");
+                    i++; //skip added *
+                }
+            }
+            prevString = output.get(i);
         }
-    return output;
+        return output;
+    }
+
+    private boolean isNumber(String test) {
+        if (test.isEmpty()) return false;
+        if (Character.isDigit(test.charAt(0))) return true;
+        if (test.length()>1 && Character.isDigit(test.charAt(1))) return true;
+        if (test.length()>2 && Character.isDigit(test.charAt(2))) return true;
+        return false;
     }
 
         // removes additional + in beginning or after parentheses: "+3-4" -> "3-4"
@@ -108,19 +121,11 @@ public class Calc {
     
         // returns precedence value of operator
     private int checkPrecedence(String a) {
-         switch (a) {
-             case "*":
-                 return 2;
-             case "/":
-                 return 2;
-             case "+":
-                return 1;
-             case "-":
-                return 1;
-             default:
-                 break;
-        }
-          return 0;
+        return switch (a) {
+             case "*", "/" -> 2;
+             case "+", "-"-> 1;
+             default -> 0;
+        };
     }
 
     private List<String> toPostfix(List<String> input) {            
@@ -148,14 +153,14 @@ public class Calc {
         while (!temp.isEmpty()) {
             output.add(temp.pop());
         } 
-        System.out.println("postfix:");
-    for (String a: output) {
-        System.out.println(a);
-    }    
+//        System.out.println("postfix:");
+//   for (String a: output) {
+//        System.out.println(a);
+//   }    
     return output;
     }
 
-    private Double calculate(List<String> input) {
+    private String calculate(List<String> input) {
         Stack<String> temp = new Stack<>();
         for(String x: input) {
             if (x.length() == 1 && isOperator(x.charAt(0))) {
@@ -172,6 +177,10 @@ public class Calc {
                         temp.push(String.valueOf(a*b));
                         break;
                     case "/":
+                        if (b==0) {
+//                          System.out.println("No divison by 0!");
+                            break;
+                        }
                         temp.push(String.valueOf(a/b));
                         break;
                     default:
@@ -181,6 +190,6 @@ public class Calc {
                 temp.push(x);
             }
         }
-        return Double.parseDouble(temp.pop());
+        return temp.pop();
     }
 }
